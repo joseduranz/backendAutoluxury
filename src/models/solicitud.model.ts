@@ -9,13 +9,13 @@ export class Solicitud extends Entity {
     generated: true,
   })
   id?: string;
-
-  @property({
-    type: 'string',
-    required: true,
-  })
-  vehiculo_id: string;
-
+  /*
+    @property({
+      type: 'string',
+      required: true,
+    })
+    vehiculo_id: string;
+  */
   @property({
     type: 'string',
     required: true,
