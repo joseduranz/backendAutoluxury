@@ -44,7 +44,7 @@ export class PersonaController {
           nombre: personaBuscada.nombres,
           correo: personaBuscada.correoElectronico,
           id: personaBuscada.id,
-          rol: personaBuscada.rol //implementar
+          // rol: personaBuscada.rol
         },
         tk: token
       }
