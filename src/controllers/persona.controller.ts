@@ -93,12 +93,21 @@ export class PersonaController {
     https://autoluxury.herokuapp.com/seguridad/login
     `; //Backtick alt + 96
 
+    //notificacion al celular
+    let numeroDestino = persona.celular;
+
 
 
     fetch(`${Llaves.urlServicioNotificaciones}/envio-correo?correo_destino=${destino}&asunto=${asunto}&contenido=${contenido}`)
       .then((data: any) => {
         console.log(data);
       });
+
+    fetch(`${Llaves.urlServicioNotificaciones}/sms?mensaje=${contenido}&telefono=${numeroDestino}`)
+      .then((data: any) => {
+        console.log(data);
+      });
+
     return objetoPersona;
   }
 
