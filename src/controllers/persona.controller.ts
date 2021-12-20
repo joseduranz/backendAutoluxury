@@ -82,10 +82,18 @@ export class PersonaController {
 
     //notificación a usuario unificado con spyder(python)
     let destino = persona.correoElectronico;
-    let asunto = "Registro en la AUTO LUXURY";
-    let contenido = `Hola, ${persona.nombres},
+    let asunto = "Registro en AUTOLUXURY";
+    let contenido = `Hola, ${persona.nombres} ${persona.apellidos}, ya puedes hacer uso de nuestros servicios,
+    para comenzar inicia sesión en nuestra páguina con los siguientes datos,
+
     su nombre de usuario es: ${persona.correoElectronico},
-    y la contraseña de acceso es "${claveGenerada}`; //Backtick alt + 96
+    y la contraseña de acceso es "${claveGenerada}
+
+
+    https://autoluxury.herokuapp.com/seguridad/login
+    `; //Backtick alt + 96
+
+
 
     fetch(`${Llaves.urlServicioNotificaciones}/envio-correo?correo_destino=${destino}&asunto=${asunto}&contenido=${contenido}`)
       .then((data: any) => {
