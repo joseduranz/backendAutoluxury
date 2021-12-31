@@ -13,7 +13,7 @@ import {
   response
 } from '@loopback/rest';
 import {Llaves} from '../config/llaves';
-import {Credenciales, Persona} from '../models';
+import {ContactoUsuario, Credenciales, Persona} from '../models';
 import {PersonaRepository} from '../repositories';
 import {AutenticacionService} from '../services';
 const fetch = require("node-fetch");
@@ -27,6 +27,58 @@ export class PersonaController {
     public servicioAutenticacion: AutenticacionService,
   ) { }
 
+
+  //==================================================================
+  //CONTACTACTO POR USUARIO
+
+  @post("/contactoPersona", {
+    responses: {
+      '200': {
+        description: "envio de correo"
+      }
+    }
+  })
+  async envioCorreo(
+    @requestBody() contactoUsuario: ContactoUsuario) {
+    let destino = contactoUsuario.emailPrueba;
+    //let destino = "alfonso83@misena.edu.co"
+    let asunto = "Contactar Usuario";
+    let contenido =
+      `El usuario: ${contactoUsuario.nombre}, ha solicitado ser contactado, <br><br>
+
+      _________________________________________________________________ <br><br>
+
+      sus datos son los siguientes  <br>
+
+      Nombre: <br>
+            ${contactoUsuario.nombre}, <br>
+      E-mail: <br>
+            ${contactoUsuario.email}, <br>
+      Telefono: <br>
+              ${contactoUsuario.telefono}, <br>
+      Asunto: <br>
+            ${contactoUsuario.mensaje}
+      `;
+
+    //notificacion al celular funcional pero solo es para hacer pruebas por que el saldo se descuenta
+    let numeroDestino = 3005192727;
+
+    // fetch(`${Llaves.urlServicioNotificaciones}/sms?mensaje=${contenido}&telefono=${numeroDestino}`)
+    //   .then((data: any) => {
+    //     console.log(data);
+    //   });
+
+
+    fetch(`${Llaves.urlServicioNotificaciones}/envio-correo?correo_destino=${destino}&asunto=${asunto}&contenido=${contenido}`)
+      .then((data: any) => {
+        //console.log(data);
+      });
+  }
+
+
+  //==================================================================
+  //INICIAR SESION
+
   @post("/identificarPersona", {
     responses: {
       '200': {
@@ -39,12 +91,43 @@ export class PersonaController {
     let personaBuscada = await this.servicioAutenticacion.IdentificarPersona(credenciales.usuario, credenciales.clave);
     if (personaBuscada) {
       let token = this.servicioAutenticacion.GenerarTokenJWT(personaBuscada);
+
+      return {
+
+        datos: {
+          nombre: personaBuscada.nombres,
+          correo: personaBuscada.correoElectronico,
+          id: personaBuscada.id,
+          rol: personaBuscada.rol,
+        },
+        tk: token
+      }
+    } else {
+      throw new HttpErrors[401]("Los datos suministrados no son validos");
+    }
+  }
+
+  //==================================================================
+  //CAMBIAR CONTRASEÑA
+
+  @post("/cambiarClave", {
+    responses: {
+      '200': {
+        description: "cambio de clave"
+      }
+    }
+  })
+  async cambiarClave(
+    @requestBody() credenciales: Credenciales) { // importante importar la clase de credenciales desde modelo
+    let personaBuscada = await this.servicioAutenticacion.IdentificarPersona(credenciales.usuario, credenciales.clave);
+    if (personaBuscada) {
+      let token = this.servicioAutenticacion.GenerarTokenJWT(personaBuscada);
       return {
         datos: {
           nombre: personaBuscada.nombres,
           correo: personaBuscada.correoElectronico,
           id: personaBuscada.id,
-          rol: personaBuscada.rol
+          rol: personaBuscada.rol,
         },
         tk: token
       }
@@ -54,6 +137,57 @@ export class PersonaController {
   }
 
 
+  //==================================================================
+  //RECUPERAR CONTRASEÑA
+
+  @post("/recuperarClave", {
+    responses: {
+      '200': {
+        description: "recuperar contraseña"
+      }
+    }
+  })
+  async recuperarClave(
+    @requestBody() persona: Persona) {
+
+
+    let claveGenerada = this.servicioAutenticacion.GenerarClave();
+    let claveCifrada = this.servicioAutenticacion.cifrarClave(claveGenerada);
+    persona.contrasena = claveCifrada;
+    let objetoPersona = await this.personaRepository.updateById(persona.id, persona);
+
+    let destino = persona.correoElectronico;
+    let asunto = "Recuperar Clave";
+    let contenido = `Hola, ${persona.nombres} ${persona.apellidos}, <br><br> esta es su nueva contraseña, <br>
+    ya puedes iniciar sesión en nuestra páguina Bienvenido nuevamente <br><br>
+
+    su nombre de usuario es: ${persona.correoElectronico},<br>
+    y su nueva contraseña de acceso es "${claveGenerada}<br><br><br>
+
+
+    https://autoluxury.herokuapp.com/seguridad/login
+    `;
+
+    //notificacion al celular funcional pero solo es para hacer pruebas por que el saldo se descuenta
+    let numeroDestino = 3005192727;
+
+    // fetch(`${Llaves.urlServicioNotificaciones}/sms?mensaje=${contenido}&telefono=${numeroDestino}`)
+    //   .then((data: any) => {
+    //     console.log(data);
+    //   });
+
+
+    fetch(`${Llaves.urlServicioNotificaciones}/envio-correo?correo_destino=${destino}&asunto=${asunto}&contenido=${contenido}`)
+      .then((data: any) => {
+        //console.log(data);
+      });
+    return objetoPersona;
+  }
+
+
+
+  //==================================================================
+  //REGISTRAR PERSONA
 
   @post('/personas')
   @response(200, {
@@ -83,19 +217,23 @@ export class PersonaController {
     //notificación a usuario unificado con spyder(python)
     let destino = persona.correoElectronico;
     let asunto = "Registro en AUTOLUXURY";
-    let contenido = `Hola, ${persona.nombres} ${persona.apellidos}, ya puedes hacer uso de nuestros servicios,
-    para comenzar inicia sesión en nuestra páguina con los siguientes datos,
+    let contenido = `Hola, ${persona.nombres} ${persona.apellidos}, <br><br> ya puedes hacer uso de nuestros servicios, <br>
+    para comenzar, inicia sesión en nuestra páguina con los siguientes datos <br><br>
 
-    su nombre de usuario es: ${persona.correoElectronico},
-    y la contraseña de acceso es "${claveGenerada}
+    su nombre de usuario es: ${persona.correoElectronico},<br>
+    y la contraseña de acceso es "${claveGenerada}<br><br><br>
 
 
     https://autoluxury.herokuapp.com/seguridad/login
     `; //Backtick alt + 96
 
-    //notificacion al celular
+    //notificacion al celular funcional pero solo es para hacer pruebas por que el saldo se descuenta
     let numeroDestino = persona.celular;
 
+    // fetch(`${Llaves.urlServicioNotificaciones}/sms?mensaje=${contenido}&telefono=${numeroDestino}`)
+    //   .then((data: any) => {
+    //     console.log(data);
+    //   });
 
 
     fetch(`${Llaves.urlServicioNotificaciones}/envio-correo?correo_destino=${destino}&asunto=${asunto}&contenido=${contenido}`)
@@ -103,13 +241,13 @@ export class PersonaController {
         console.log(data);
       });
 
-    fetch(`${Llaves.urlServicioNotificaciones}/sms?mensaje=${contenido}&telefono=${numeroDestino}`)
-      .then((data: any) => {
-        console.log(data);
-      });
 
     return objetoPersona;
   }
+
+
+  //==================================================================
+  //NUMERO DE USUARIOS REGISTRADOS
 
   @get('/personas/count')
   @response(200, {
@@ -121,6 +259,9 @@ export class PersonaController {
   ): Promise<Count> {
     return this.personaRepository.count(where);
   }
+
+  //==================================================================
+  //LISTADO DE USUARIOS
 
   @get('/personas')
   @response(200, {
@@ -139,6 +280,9 @@ export class PersonaController {
   ): Promise<Persona[]> {
     return this.personaRepository.find(filter);
   }
+
+  //==================================================================
+  //ACTUALIZAR USUARIO
 
   @patch('/personas')
   @response(200, {
@@ -159,6 +303,9 @@ export class PersonaController {
     return this.personaRepository.updateAll(persona, where);
   }
 
+
+  //==================================================================
+  //USUARIO CON ID
   @get('/personas/{id}')
   @response(200, {
     description: 'Persona model instance',

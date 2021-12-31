@@ -5,4 +5,5 @@ const tslib_1 = require("tslib");
 (0, tslib_1.__exportStar)(require("./vehiculo.model"), exports);
 (0, tslib_1.__exportStar)(require("./solicitud.model"), exports);
 (0, tslib_1.__exportStar)(require("./credenciales.model"), exports);
+(0, tslib_1.__exportStar)(require("./contacto-usuario.model"), exports);
 //# sourceMappingURL=index.js.map

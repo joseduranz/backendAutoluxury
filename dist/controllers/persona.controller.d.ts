@@ -1,11 +1,12 @@
 import { Count, Filter, FilterExcludingWhere, Where } from '@loopback/repository';
-import { Credenciales, Persona } from '../models';
+import { ContactoUsuario, Credenciales, Persona } from '../models';
 import { PersonaRepository } from '../repositories';
 import { AutenticacionService } from '../services';
 export declare class PersonaController {
     personaRepository: PersonaRepository;
     servicioAutenticacion: AutenticacionService;
     constructor(personaRepository: PersonaRepository, servicioAutenticacion: AutenticacionService);
+    envioCorreo(contactoUsuario: ContactoUsuario): Promise<void>;
     identificarPersona(credenciales: Credenciales): Promise<{
         datos: {
             nombre: string;
@@ -15,6 +16,7 @@ export declare class PersonaController {
         };
         tk: any;
     }>;
+    recuperarClave(persona: Persona): Promise<void>;
     create(persona: Omit<Persona, 'id'>): Promise<Persona>;
     count(where?: Where<Persona>): Promise<Count>;
     find(filter?: Filter<Persona>): Promise<Persona[]>;

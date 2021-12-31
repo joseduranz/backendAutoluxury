@@ -15,6 +15,40 @@ let PersonaController = class PersonaController {
         this.personaRepository = personaRepository;
         this.servicioAutenticacion = servicioAutenticacion;
     }
+    //==================================================================
+    //CONTACTACTO POR USUARIO
+    async envioCorreo(contactoUsuario) {
+        let destino = contactoUsuario.emailPrueba;
+        //let destino = "alfonso83@misena.edu.co"
+        let asunto = "Contactar Usuario";
+        let contenido = `El usuario: ${contactoUsuario.nombre}, ha solicitado ser contactado, <br><br>
+
+      _________________________________________________________________ <br><br>
+
+      sus datos son los siguientes  <br>
+
+      Nombre: <br>
+            ${contactoUsuario.nombre}, <br>
+      E-mail: <br>
+            ${contactoUsuario.email}, <br>
+      Telefono: <br>
+              ${contactoUsuario.telefono}, <br>
+      Asunto: <br>
+            ${contactoUsuario.mensaje}
+      `;
+        //notificacion al celular funcional pero solo es para hacer pruebas por que el saldo se descuenta
+        let numeroDestino = 3005192727;
+        // fetch(`${Llaves.urlServicioNotificaciones}/sms?mensaje=${contenido}&telefono=${numeroDestino}`)
+        //   .then((data: any) => {
+        //     console.log(data);
+        //   });
+        fetch(`${llaves_1.Llaves.urlServicioNotificaciones}/envio-correo?correo_destino=${destino}&asunto=${asunto}&contenido=${contenido}`)
+            .then((data) => {
+            //console.log(data);
+        });
+    }
+    //==================================================================
+    //INICIAR SESION
     async identificarPersona(credenciales) {
         let personaBuscada = await this.servicioAutenticacion.IdentificarPersona(credenciales.usuario, credenciales.clave);
         if (personaBuscada) {
@@ -24,7 +58,7 @@ let PersonaController = class PersonaController {
                     nombre: personaBuscada.nombres,
                     correo: personaBuscada.correoElectronico,
                     id: personaBuscada.id,
-                    rol: personaBuscada.rol //implementar
+                    rol: personaBuscada.rol,
                 },
                 tk: token
             };
@@ -33,6 +67,38 @@ let PersonaController = class PersonaController {
             throw new rest_1.HttpErrors[401]("Los datos suministrados no son validos");
         }
     }
+    //==================================================================
+    //RECUPERAR CONTRASEÑA
+    async recuperarClave(persona) {
+        let claveGenerada = this.servicioAutenticacion.GenerarClave();
+        let claveCifrada = this.servicioAutenticacion.cifrarClave(claveGenerada);
+        persona.contrasena = claveCifrada;
+        let objetoPersona = await this.personaRepository.updateById(persona.id, persona);
+        let destino = persona.correoElectronico;
+        let asunto = "Recuperar Clave";
+        let contenido = `Hola, ${persona.nombres} ${persona.apellidos}, <br><br> esta es su nueva contraseña, <br>
+    ya puedes iniciar sesión en nuestra páguina Bienvenido nuevamente <br><br>
+
+    su nombre de usuario es: ${persona.correoElectronico},<br>
+    y su nueva contraseña de acceso es "${claveGenerada}<br><br><br>
+
+
+    https://autoluxury.herokuapp.com/seguridad/login
+    `;
+        //notificacion al celular funcional pero solo es para hacer pruebas por que el saldo se descuenta
+        let numeroDestino = 3005192727;
+        // fetch(`${Llaves.urlServicioNotificaciones}/sms?mensaje=${contenido}&telefono=${numeroDestino}`)
+        //   .then((data: any) => {
+        //     console.log(data);
+        //   });
+        fetch(`${llaves_1.Llaves.urlServicioNotificaciones}/envio-correo?correo_destino=${destino}&asunto=${asunto}&contenido=${contenido}`)
+            .then((data) => {
+            //console.log(data);
+        });
+        return objetoPersona;
+    }
+    //==================================================================
+    //REGISTRAR PERSONA
     async create(persona) {
         let claveGenerada = this.servicioAutenticacion.GenerarClave();
         let claveCifrada = this.servicioAutenticacion.cifrarClave(claveGenerada);
@@ -40,25 +106,45 @@ let PersonaController = class PersonaController {
         let objetoPersona = await this.personaRepository.create(persona);
         //notificación a usuario unificado con spyder(python)
         let destino = persona.correoElectronico;
-        let asunto = "Registro en la AUTO LUXURY";
-        let contenido = `Hola, ${persona.nombres},
-    su nombre de usuario es: ${persona.correoElectronico},
-    y la contraseña de acceso es "${claveGenerada}`; //Backtick alt + 96
+        let asunto = "Registro en AUTOLUXURY";
+        let contenido = `Hola, ${persona.nombres} ${persona.apellidos}, <br><br> ya puedes hacer uso de nuestros servicios, <br>
+    para comenzar, inicia sesión en nuestra páguina con los siguientes datos <br><br>
+
+    su nombre de usuario es: ${persona.correoElectronico},<br>
+    y la contraseña de acceso es "${claveGenerada}<br><br><br>
+
+
+    https://autoluxury.herokuapp.com/seguridad/login
+    `; //Backtick alt + 96
+        //notificacion al celular funcional pero solo es para hacer pruebas por que el saldo se descuenta
+        let numeroDestino = persona.celular;
+        // fetch(`${Llaves.urlServicioNotificaciones}/sms?mensaje=${contenido}&telefono=${numeroDestino}`)
+        //   .then((data: any) => {
+        //     console.log(data);
+        //   });
         fetch(`${llaves_1.Llaves.urlServicioNotificaciones}/envio-correo?correo_destino=${destino}&asunto=${asunto}&contenido=${contenido}`)
             .then((data) => {
             console.log(data);
         });
         return objetoPersona;
     }
+    //==================================================================
+    //NUMERO DE USUARIOS REGISTRADOS
     async count(where) {
         return this.personaRepository.count(where);
     }
+    //==================================================================
+    //LISTADO DE USUARIOS
     async find(filter) {
         return this.personaRepository.find(filter);
     }
+    //==================================================================
+    //ACTUALIZAR USUARIO
     async updateAll(persona, where) {
         return this.personaRepository.updateAll(persona, where);
     }
+    //==================================================================
+    //USUARIO CON ID
     async findById(id, filter) {
         return this.personaRepository.findById(id, filter);
     }
@@ -73,6 +159,19 @@ let PersonaController = class PersonaController {
     }
 };
 (0, tslib_1.__decorate)([
+    (0, rest_1.post)("/contactoPersona", {
+        responses: {
+            '200': {
+                description: "envio de correo"
+            }
+        }
+    }),
+    (0, tslib_1.__param)(0, (0, rest_1.requestBody)()),
+    (0, tslib_1.__metadata)("design:type", Function),
+    (0, tslib_1.__metadata)("design:paramtypes", [models_1.ContactoUsuario]),
+    (0, tslib_1.__metadata)("design:returntype", Promise)
+], PersonaController.prototype, "envioCorreo", null);
+(0, tslib_1.__decorate)([
     (0, rest_1.post)("/identificarPersona", {
         responses: {
             '200': {
@@ -85,6 +184,19 @@ let PersonaController = class PersonaController {
     (0, tslib_1.__metadata)("design:paramtypes", [models_1.Credenciales]),
     (0, tslib_1.__metadata)("design:returntype", Promise)
 ], PersonaController.prototype, "identificarPersona", null);
+(0, tslib_1.__decorate)([
+    (0, rest_1.post)("/recuperarClave", {
+        responses: {
+            '200': {
+                description: "recuperar contraseña"
+            }
+        }
+    }),
+    (0, tslib_1.__param)(0, (0, rest_1.requestBody)()),
+    (0, tslib_1.__metadata)("design:type", Function),
+    (0, tslib_1.__metadata)("design:paramtypes", [models_1.Persona]),
+    (0, tslib_1.__metadata)("design:returntype", Promise)
+], PersonaController.prototype, "recuperarClave", null);
 (0, tslib_1.__decorate)([
     (0, rest_1.post)('/personas'),
     (0, rest_1.response)(200, {
